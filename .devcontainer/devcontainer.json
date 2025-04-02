@@ -1,0 +1,28 @@
+{
+    "name": "Next.js Development Container",
+    "dockerFile": "Dockerfile",
+    "context": "..",
+    "appPort": [3000],
+    "forwardPorts": [3000],
+    "settings": {
+      "terminal.integrated.shell.linux": "/bin/bash",
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "extensions": [
+      "ms-python.vscode-pylance",
+      "vscode.git",
+      "eamodio.gitlens",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "christian-kohler.npm-intellisense",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "github.copilot"
+    ],
+    "postCreateCommand": "git lfs install && npm install",
+    "remoteUser": "node"
+  }
