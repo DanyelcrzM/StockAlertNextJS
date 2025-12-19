@@ -1,9 +1,8 @@
 import { ProductService } from "../productService";
 import { Product } from "../../models/Product";
-import { StockAlert } from "@/src/models/StockAlert";
+import { LowStockNotifier } from "../lowStockNotifier";
 
 describe("ProductService", () => {
-  // TEST EXISTENTE - Decremento básico (se mantiene igual)
   it("should decrement existing product stock", async () => {
     // Arrange
     const productName = "Camiseta";
@@ -16,8 +15,10 @@ describe("ProductService", () => {
       stock: initialStock,
     };
 
+    // Mock del repositorio
     const mockRepository = {
       findByName: jest.fn().mockResolvedValue(existingProduct),
+
       save: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -37,22 +38,21 @@ describe("ProductService", () => {
     });
   });
 
-  // NUEVO TEST - Escenario 1: Alerta de Stock Bajo
   it("should send alert when below min stock ", async () => {
     // Arrange
     const productName = "Camiseta Azul";
-    const initialStock = 10; // Stock inicial por encima del mínimo
-    const decrementAmount = 5; // Nivel mínimo configurado
-    const expectedStock = initialStock - decrementAmount; // Reducción que lleva el stock por debajo del mínimo
-    const minStockLevel = 10; // 5 unidades - por debajo del mínimo
+    const initialStock = 15;
+    const decrementAmount = 5;
+    const expectedStock = initialStock - decrementAmount;
+    const minStockLevel = 10;
 
     const existingProduct: Product = {
       name: productName,
       stock: initialStock,
-      minStockLevel: minStockLevel, // ← ERROR: Propiedad no existe
+      minStockLevel: minStockLevel,
     };
 
-    // Mock del repositorio
+    // Mocks
     const mockRepository = {
       findByName: jest.fn().mockResolvedValue(existingProduct),
       save: jest.fn().mockResolvedValue(undefined),
@@ -62,9 +62,11 @@ describe("ProductService", () => {
       sendLowStockAlert: jest.fn().mockResolvedValue(undefined),
     };
 
-    const service = new ProductService(mockRepository, mockNotificationService);
+    const service = new ProductService(mockRepository);
+    const lowStockNotifier = new LowStockNotifier(mockNotificationService);
 
     // Act
+    lowStockNotifier.setupLowStockNotifications(service);
     await service.decrementStock(productName, decrementAmount);
 
     // Assert
@@ -73,9 +75,9 @@ describe("ProductService", () => {
     // Verifica que se envió la alerta de stock bajo
     expect(mockNotificationService.sendLowStockAlert).toHaveBeenCalledTimes(1);
 
-    // El sistema debe enviar una alerta indicando que el stock está por debajo del nivel mínimo
-    const sentAlert: StockAlert =
-      mockNotificationService.sendLowStockAlert.mock.calls[0][0]; // ← ERROR: Método / Clase no existe
+    // Verifica los parámetros con los que se llamó
+    const sentAlert =
+      mockNotificationService.sendLowStockAlert.mock.calls[0][0];
     expect(sentAlert.productName).toBe(productName);
     expect(sentAlert.currentStock).toBe(expectedStock);
     expect(sentAlert.minStockLevel).toBe(minStockLevel);
