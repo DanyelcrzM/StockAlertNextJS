@@ -1,25 +1,36 @@
 import { ProductRepository } from "../domain/repositories/ProductRepository";
-import { Product } from "@/src/models/Product";
+import { NotificationService } from "./notificationService";
+import { StockAlert } from "../models/StockAlert";
 
 export class ProductService {
-  constructor(private productRepository: ProductRepository) {}
+  constructor(
+    private productRepository: ProductRepository,
+    private notificationService?: NotificationService
+  ) {}
 
   async decrementStock(productName: string, amount: number): Promise<void> {
-    // 1. Buscar producto por nombre (como especifica el escenario)
     const product = await this.productRepository.findByName(productName);
-    // 2. Decrementar el stock en la cantidad especificada
+
     const updatedProduct = {
       ...product!,
       stock: product!.stock - amount,
     };
-    // 3. Guardar el producto actualizado
-    await this.productRepository.save(updatedProduct);
-  }
 
-  // async decrementProductStock(
-  //   productName: string,
-  //   amount: number
-  // ): Promise<void> {
-  //   throw new Error("Método decrementStock no implementado aún - Fase Roja");
-  // }
+    await this.productRepository.save(updatedProduct);
+
+    //  NUEVO: Verificar si se debe enviar alerta de stock bajo
+
+    if (
+      this.notificationService &&
+      updatedProduct.stock < updatedProduct.minStockLevel!
+    ) {
+      let alert: StockAlert = {
+        productName: updatedProduct.name,
+        currentStock: updatedProduct.stock,
+        minStockLevel: updatedProduct.minStockLevel!,
+      };
+
+      this.notificationService.sendLowStockAlert(alert);
+    }
+  }
 }
